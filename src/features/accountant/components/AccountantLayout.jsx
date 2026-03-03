@@ -7,10 +7,29 @@ const AccountantLayout = ({ children, pageTitle, pageDescription }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate(ROUTES.LOGIN);
-  };
+  // const handleLogout = () => {
+  //   logout();
+  //   navigate(ROUTES.LOGIN);
+  // };
+
+  const handleLogout = async () => {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (refreshToken) {
+    try {
+      await logoutAPI(refreshToken);
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Logout API error:', error);
+      toast.error(error.message);
+    }
+  }
+  // Clear client-side storage
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  dispatch(logout());
+  navigate(ROUTES.LOGIN);
+};
 
   // const navItems = [
   //   { to: '/dashboard/accountant', label: 'Fee Dashboard', icon: 'dashboard' },

@@ -1,9 +1,12 @@
+
+
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import { updatePlan } from '../../../services/superadmin/planService.js';
 
 const TierSettingsModal = ({ isOpen, onClose, tier, initialData, onSave }) => {
   const [formData, setFormData] = useState(initialData || {
-    price: 49,
+    priceMonthly: 49,
     students: 200,
     storage: 10,
     modules: ['Core LMS', 'Attendance'],
@@ -20,10 +23,15 @@ const TierSettingsModal = ({ isOpen, onClose, tier, initialData, onSave }) => {
     }));
   };
 
-  const handleSave = () => {
-    onSave(formData);
-    toast.success(`${tier} settings updated`);
-    onClose();
+  const handleSave = async () => {
+    try {
+      await updatePlan(tier.toUpperCase(), formData);
+      onSave(formData);
+      toast.success(`${tier} settings updated`);
+      onClose();
+    } catch (error) {
+      toast.error('Failed to update plan');
+    }
   };
 
   return (
@@ -42,8 +50,8 @@ const TierSettingsModal = ({ isOpen, onClose, tier, initialData, onSave }) => {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Price ($/mo)</label>
               <input
                 type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: +e.target.value })}
+                value={formData.priceMonthly}
+                onChange={(e) => setFormData({ ...formData, priceMonthly: +e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white"
               />
             </div>
@@ -72,7 +80,7 @@ const TierSettingsModal = ({ isOpen, onClose, tier, initialData, onSave }) => {
                   <label key={module} className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={formData.modules.includes(module)}
+                      checked={formData.modules?.includes(module)}
                       onChange={() => handleModuleToggle(module)}
                       className="rounded text-primary focus:ring-primary"
                     />

@@ -1,42 +1,78 @@
-// Simulate API response
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import api from '../../services/api';
 
-// Dummy user database (replace with real API later)
-const dummyUsers = [
-  { email: 'super@school.edu', password: 'Super123!', role: 'superadmin', name: 'Super Admin' },
-  { email: 'admin@school.edu', password: 'Admin123!', role: 'schooladmin', name: 'School Admin' },
-  { email: 'acc@school.edu', password: 'Acc123!', role: 'accountant', name: 'Accountant' },
-  { email: 'hr@school.edu', password: 'Hr123!', role: 'hr', name: 'HR Staff' },
-];
-
-export const loginAPI = async (email, password, selectedRole) => {
-  await delay(1000); // simulate network
-  const user = dummyUsers.find(u => u.email === email && u.password === password && u.role === selectedRole);
-  if (!user) {
-    throw new Error('Invalid credentials or role mismatch');
+export const loginAPI = async (email, password) => {
+  try {
+    const response = await api.post('/auth/login', { email, password });
+    console.log('🔐 Login response data:', response); // should contain { accessToken, refreshToken, user }
+    return response;
+  } catch (error) {
+    throw new Error(error.message || 'Login failed');
   }
-  // return fake token and user (omit password)
-  const { password: _, ...userWithoutPassword } = user;
-  return { user: userWithoutPassword, token: 'fake-jwt-token' };
 };
 
-export const forgotPasswordAPI = async (identifier) => {
-  await delay(1000);
-  // always succeed for demo
-  return { message: 'Recovery link sent' };
-};
-
-export const verifyOTPAPI = async (otp) => {
-  await delay(1000);
-  // accept any 6-digit code for demo
-  if (otp.length === 6 && /^\d+$/.test(otp)) {
-    return { success: true };
+export const refreshTokenAPI = async (refreshToken) => {
+  try {
+    const response = await api.post('/auth/refresh', { refreshToken });
+    return response; // contains new accessToken, refreshToken, and user
+  } catch (error) {
+    throw new Error(error.message || 'Token refresh failed');
   }
-  throw new Error('Invalid OTP');
 };
 
-export const resetPasswordAPI = async (newPassword) => {
-  await delay(1000);
-  // accept any password that meets strength rules (we'll validate on frontend anyway)
-  return { success: true };
+export const handleLogin = async (email, password) => {
+  try {
+    const data = await loginAPI(email, password); // data = { user, token, refreshToken }
+    dispatch(setCredentials(data));
+    // redirect based on role
+  } catch (error) {
+    toast.error(error.message);
+  }
+};
+
+export const forgotPasswordAPI = async (email) => {
+  try {
+    const response = await api.post('/auth/forgot-password', { email });
+    console.log('📧 Forgot password response:', response);
+    return response;
+  } catch (error) {
+    throw new Error(error.message || 'Failed to send reset email');
+  }
+};
+
+export const verifyOTPAPI = async (email, otp) => {
+  try {
+    const response = await api.post('/auth/verify-otp', { email, otp });
+    console.log('🔢 Verify OTP response:', response);
+    return response;
+  } catch (error) {
+    throw new Error(error.message || 'OTP verification failed');
+  }
+};
+
+export const resetPasswordAPI = async (resetToken, newPassword) => {
+  try {
+    const response = await api.post('/auth/reset-password', { resetToken, newPassword });
+    console.log('🔓 Reset password response:', response);
+    return response;
+  } catch (error) {
+    throw new Error(error.message || 'Password reset failed');
+  }
+};
+
+export const logoutAPI = async (refreshToken) => {
+  try {
+    const response = await api.post('/auth/logout', { refreshToken });
+    return response;
+  } catch (error) {
+    throw new Error(error.message || 'Logout failed');
+  }
+};
+
+export const changePasswordAPI = async (currentPassword, newPassword) => {
+  try {
+    const response = await api.post('/auth/change-password', { currentPassword, newPassword });
+    return response;
+  } catch (error) {
+    throw new Error(error.message || 'Password change failed');
+  }
 };

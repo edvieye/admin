@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Button from '../../../components/common/Button';
-import { verifyOTPAPI } from '../authapi'; 
+import { verifyOTPAPI, forgotPasswordAPI } from '../authAPI';
+import toast from 'react-hot-toast';
 
 const schema = z.object({
   otp: z.string().length(6, 'Code must be 6 digits').regex(/^\d+$/, 'Only numbers allowed'),
@@ -12,25 +13,26 @@ const schema = z.object({
 
 const OTPVerification = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const email = location.state?.email;
+
   const [serverError, setServerError] = useState('');
-  const [timer, setTimer] = useState(52); // seconds
+  const [timer, setTimer] = useState(52);
   const [canResend, setCanResend] = useState(false);
+  const [otpArray, setOtpArray] = useState(['', '', '', '', '', '']); // ← removed demo values
+  const inputRefs = useRef([]);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
     setValue,
-    watch,
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { otp: '' },
   });
 
-  const otpValue = watch('otp');
-
-  // Simulate countdown
-  React.useEffect(() => {
+  useEffect(() => {
     if (timer > 0) {
       const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
       return () => clearInterval(interval);
@@ -39,46 +41,47 @@ const OTPVerification = () => {
     }
   }, [timer]);
 
+  useEffect(() => {
+    if (!email) {
+      toast.error('Session expired. Please start again.');
+      navigate('/forgot-password');
+    }
+  }, [email, navigate]);
+
   const onSubmit = async (data) => {
     setServerError('');
     try {
-      await verifyOTPAPI(data.otp);
-      navigate('/create-new-password');
+      const response = await verifyOTPAPI(email, data.otp);
+      console.log('🔢 Verify OTP full response:', response);
+      navigate('/reset-password', { state: { resetToken: response.resetToken } });
+      toast.success('OTP verified successfully');
     } catch (error) {
       setServerError(error.message);
+      toast.error(error.message);
     }
   };
 
-  const handleResend = () => {
-    if (canResend) {
-      // call resend API (dummy)
+  const handleResend = async () => {
+    if (!canResend) return;
+    try {
+      await forgotPasswordAPI(email);
       setTimer(52);
       setCanResend(false);
-      // Optionally show a message
+      toast.success('New verification code sent');
+    } catch (error) {
+      setServerError(error.message);
+      toast.error(error.message);
     }
   };
-
-  // For a nicer UX, we can split the OTP into 6 boxes. But for simplicity, we'll use a single input.
-  // To match the design, we'll hide the actual input and display 6 divs that reflect the typed digits.
-  // But that requires more logic. Let's keep it simple: one input with custom styling to look like 6 boxes.
-  // We'll use a CSS trick: letter-spacing and background.
-  // Alternatively, we can use 6 separate inputs. I'll show the 6-input approach because it's closer to the HTML.
-
-  // 6-input approach:
-  const inputRefs = useRef([]);
-  const [otpArray, setOtpArray] = useState(['4', '8', '', '', '', '']); // prefill first two for demo
 
   const handleChange = (e, index) => {
     const value = e.target.value;
-    if (/^\d?$/.test(value)) { // allow only one digit
+    if (/^\d?$/.test(value)) {
       const newOtp = [...otpArray];
       newOtp[index] = value;
       setOtpArray(newOtp);
-      setValue('otp', newOtp.join('')); // update react-hook-form value
-      // Move to next input if value is entered
-      if (value && index < 5) {
-        inputRefs.current[index + 1].focus();
-      }
+      setValue('otp', newOtp.join(''));
+      if (value && index < 5) inputRefs.current[index + 1].focus();
     }
   };
 
@@ -88,17 +91,13 @@ const OTPVerification = () => {
     }
   };
 
-  // For paste support (simplified)
   const handlePaste = (e) => {
     e.preventDefault();
     const pasteData = e.clipboardData.getData('text').slice(0, 6).replace(/\D/g, '');
     const newOtp = [...otpArray];
-    for (let i = 0; i < pasteData.length; i++) {
-      newOtp[i] = pasteData[i];
-    }
+    for (let i = 0; i < pasteData.length; i++) newOtp[i] = pasteData[i];
     setOtpArray(newOtp);
     setValue('otp', newOtp.join(''));
-    // focus next empty or last
     const nextEmpty = newOtp.findIndex(v => !v);
     if (nextEmpty !== -1) inputRefs.current[nextEmpty].focus();
     else inputRefs.current[5].focus();
@@ -113,12 +112,11 @@ const OTPVerification = () => {
           </div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">Verify Your Identity</h1>
           <p className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm leading-relaxed">
-            We've sent a 6-digit security code to your registered device. Please enter it below to continue.
+            We've sent a 6-digit security code to your email. Please enter it below.
           </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          {/* OTP Input Grid - 6 boxes */}
           <div className="flex justify-between gap-2 sm:gap-4" onPaste={handlePaste}>
             {[0, 1, 2, 3, 4, 5].map((index) => (
               <input
@@ -136,13 +134,11 @@ const OTPVerification = () => {
               />
             ))}
           </div>
-          {/* Hidden input for react-hook-form validation (optional, we already sync) */}
           <input type="hidden" {...register('otp')} value={otpArray.join('')} />
 
           {errors.otp && <p className="text-xs text-red-500 text-center">{errors.otp.message}</p>}
           {serverError && <p className="text-xs text-red-500 text-center">{serverError}</p>}
 
-          {/* Resend section */}
           <div className="text-center space-y-1">
             <p className="text-sm text-zinc-500 dark:text-zinc-400">Didn't receive the code?</p>
             {!canResend ? (
@@ -183,7 +179,6 @@ const OTPVerification = () => {
         </div>
       </div>
 
-      {/* Security notice */}
       <div className="fixed bottom-6 left-0 right-0 text-center pointer-events-none">
         <p className="text-xs text-zinc-400 dark:text-zinc-600 bg-background-light dark:bg-background-dark px-4 py-1 inline-block">
           Protect your account. Do not share this code with anyone.

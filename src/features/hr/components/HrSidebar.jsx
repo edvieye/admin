@@ -9,10 +9,28 @@ const HrSidebar = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate(ROUTES.LOGIN);
-  };
+  // const handleLogout = () => {
+  //   dispatch(logout());
+  //   navigate(ROUTES.LOGIN);
+  // };
+  const handleLogout = async () => {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (refreshToken) {
+    try {
+      await logoutAPI(refreshToken);
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Logout API error:', error);
+      toast.error(error.message);
+    }
+  }
+  // Clear client-side storage
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  dispatch(logout());
+  navigate('/login');
+};
 
   const navItems = [
   { to: ROUTES.HR_HOME, label: 'Dashboard', icon: 'dashboard' },
