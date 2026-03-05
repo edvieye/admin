@@ -21,7 +21,13 @@ import GlobalPlanSettings from "../features/superadmin/pages/GlobalPlanSettings"
 import PlatformAnalytics from "../features/superadmin/pages/PlatformAnalytics";
 import SupportTickets from "../features/superadmin/pages/SupportTickets";
 import SecuritySettings from "../features/superadmin/pages/SecuritySettings";
-import Notifications from '../features/notifications/pages/Notifications';
+import UserManagement from '../features/superadmin/pages/UserManagement';
+import AuditLogs from '../features/superadmin/pages/AuditLogs';
+import BillingInvoices from '../features/superadmin/pages/BillingInvoices';
+import RolePermissions from '../features/superadmin/pages/RolePermissions';
+import NotificationCenter from '../features/superadmin/pages/NotificationCenter';
+
+import NotificationsList from '../features/notifications/pages/NotificationsList';
 
 import HrDashboard from '../features/hr/pages/Dashboard';
 import HrStaffDirectory from '../features/hr/pages/HrStaffDirectory';
@@ -131,7 +137,12 @@ const AppRoutes = () => {
         <Route path="/dashboard/super-admin/analytics" element={<PlatformAnalytics />} />
         <Route path="/dashboard/super-admin/support" element={<SupportTickets />} />
         <Route path="/dashboard/super-admin/security" element={<SecuritySettings />} />
-        <Route path="/dashboard/super-admin/notifications" element={<Notifications />} />
+        <Route path="/dashboard/super-admin/users" element={<UserManagement />} />
+        <Route path="/dashboard/super-admin/audit-logs" element={<AuditLogs />} />
+        <Route path="/dashboard/super-admin/billing" element={<BillingInvoices />} />
+        <Route path="/dashboard/super-admin/roles" element={<RolePermissions />} />
+        <Route path="/dashboard/super-admin/notifications" element={<NotificationsList />} />
+        <Route path="/dashboard/super-admin/notification-center" element={<NotificationCenter />} />
       </Route>
 
       {/* SCHOOL ADMIN (Main App Area) */}

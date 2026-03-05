@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -8,11 +9,14 @@ import { logoutAPI } from '../../../services/authService';
 import { getRefreshToken, clearAuthData } from '../../../services/tokenService';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
+import NotificationDropdown from '../../notifications/components/NotificationDropdown';
 
 const SuperAdminLayout = ({ children, pageTitle, pageDescription, headerAction, onAddSchool = null }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [user, setUser] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -24,6 +28,15 @@ const SuperAdminLayout = ({ children, pageTitle, pageDescription, headerAction, 
       }
     };
     fetchUser();
+  }, []);
+
+  useEffect(() => {
+    // Mock unread count – replace with API call
+    const fetchUnreadCount = () => {
+      // In real app: api.get('/notifications/unread-count')
+      setTimeout(() => setUnreadCount(2), 100);
+    };
+    fetchUnreadCount();
   }, []);
 
   const handleLogout = async () => {
@@ -46,8 +59,12 @@ const SuperAdminLayout = ({ children, pageTitle, pageDescription, headerAction, 
     { to: '/dashboard/super-admin', label: 'Dashboard', icon: 'dashboard' },
     { to: '/dashboard/super-admin/schools', label: 'Schools', icon: 'domain' },
     { to: '/dashboard/super-admin/subscriptions', label: 'Subscriptions', icon: 'payments' },
+    { to: '/dashboard/super-admin/users', label: 'Users', icon: 'people' },
+    { to: '/dashboard/super-admin/roles', label: 'Roles', icon: 'admin_panel_settings' },
     { to: '/dashboard/super-admin/support', label: 'Support Tickets', icon: 'confirmation_number' },
     { to: '/dashboard/super-admin/analytics', label: 'Analytics', icon: 'analytics' },
+    { to: '/dashboard/super-admin/audit-logs', label: 'Audit Logs', icon: 'history' },
+    { to: '/dashboard/super-admin/billing', label: 'Billing', icon: 'receipt' },
     { to: '/dashboard/super-admin/configuration', label: 'Configuration', icon: 'settings' },
   ];
 
@@ -97,7 +114,7 @@ const SuperAdminLayout = ({ children, pageTitle, pageDescription, headerAction, 
               <span>Security</span>
             </NavLink>
             <NavLink
-              to="/dashboard/super-admin/notifications"
+              to="/dashboard/super-admin/notification-center"
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
                   isActive
@@ -107,7 +124,7 @@ const SuperAdminLayout = ({ children, pageTitle, pageDescription, headerAction, 
               }
             >
               <span className="material-icons text-[20px]">notifications</span>
-              <span>Notifications</span>
+              <span>Notification Center</span>
             </NavLink>
           </div>
         </nav>
@@ -133,19 +150,52 @@ const SuperAdminLayout = ({ children, pageTitle, pageDescription, headerAction, 
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-auto min-h-20 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 px-8 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+        <header className="h-auto min-h-20 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 px-8 py-4 bg-white/80">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-slate-400 font-medium">Main Platform</span>
             <span className="material-icons text-slate-300 text-[18px]">chevron_right</span>
             <span className="text-slate-900 dark:text-white font-bold tracking-tight">{pageTitle}</span>
           </div>
-          <div className="flex items-center gap-6 flex-wrap">
-            <NavLink to="/dashboard/super-admin/notifications" className="relative group">
-              <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary rounded-lg transition-colors relative">
+          <div className="flex items-center gap-6 flex-wrap relative">
+            {/* Notification Icon with Dropdown */}
+            {/* <div className="relative z-50">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary rounded-lg transition-colors relative"
+              >
                 <span className="material-icons">notifications</span>
-                <span className="absolute top-2 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white"></span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2.5 w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
-            </NavLink>
+              <NotificationDropdown
+                isOpen={showNotifications}
+                onClose={() => setShowNotifications(false)}
+                onUnreadCountChange={setUnreadCount}
+              />
+            </div> */}
+
+            <div className="relative z-50">   {/* added z-50 */}
+  <button
+    onClick={() => setShowNotifications(!showNotifications)}
+    className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary rounded-lg transition-colors relative"
+  >
+    <span className="material-icons text-3xl">notifications</span>
+    {unreadCount > 0 && (
+      <span className="absolute -top-0 -right-0 w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+        {unreadCount > 9 ? '9+' : unreadCount}
+      </span>
+    )}
+  </button>
+  <NotificationDropdown
+    isOpen={showNotifications}
+    onClose={() => setShowNotifications(false)}
+    onUnreadCountChange={setUnreadCount}
+  />
+</div>
+
             {headerAction ? (
               headerAction
             ) : (
