@@ -1,12 +1,9 @@
-// import api from '../api.js';
-
-
 import api from '../api';
 
-export const getConfig = () => {
+export const getConfig = async () => {
   return api.get('/superadmin/configuration');
 };
 
-export const updateConfig = (data) => {
+export const updateConfig = async (data) => {
   return api.put('/superadmin/configuration', data);
 };
